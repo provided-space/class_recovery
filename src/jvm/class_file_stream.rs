@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 pub struct ClassFileStream<'a> {
     buffer: &'a Vec<u8>,
     current: usize,
@@ -71,7 +69,7 @@ impl<'a> ClassFileStream<'a> {
         if self.buffer.len() <= self.current + len {
             return None;
         }
-        self.current = self.current.add(len);
+        self.current += len;
         return Some(());
     }
 
@@ -79,7 +77,7 @@ impl<'a> ClassFileStream<'a> {
         if self.buffer.len() <= self.current + 2 * len {
             return None;
         }
-        self.current = self.current.add(2 * len);
+        self.current += 2 * len;
         return Some(());
     }
 
@@ -87,7 +85,7 @@ impl<'a> ClassFileStream<'a> {
         if self.buffer.len() <= self.current + 4 * len {
             return None;
         }
-        self.current = self.current.add(4 * len);
+        self.current += 4 * len;
         return Some(());
     }
 }

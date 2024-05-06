@@ -25,11 +25,6 @@ impl ClassFileParser {
 
         let _flags = stream.get_u2()?;
         let class_index = stream.get_u2()?;
-        if class_index != 2 {
-            // dunno, but it seems that the legit classes all have an index of 2
-            return None;
-        }
-
         let class_name = match cp.get_string_at(class_index) {
             Some(class_name) => class_name,
             None => return None,
@@ -57,7 +52,6 @@ impl ClassFileParser {
 
         let mut i = 1;
         while i < cp_size {
-            i += 1;
             let tag = stream.get_u1()?;
             match tag {
                 ConstantPoolEntry::CLASS => {
@@ -128,6 +122,7 @@ impl ClassFileParser {
                 }
                 _ => return None,
             }
+            i += 1;
         }
 
         return Some(cp);
