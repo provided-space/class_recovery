@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::{env, io};
-use std::io::{Read, stdin, stdout, Write};
+use std::io::{Read, Write};
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -32,7 +32,8 @@ fn main() -> io::Result<()> {
     println!("Searching for Java Class pattern.");
     let indices = buffer.indices_of_needle(MAGIC_VALUE);
 
-    println!("Searching constructable classes.");
+    println!("Found {} possible classes.\nSearching constructable classes.", indices.len());
+
     let now = SystemTime::now();
     for buffer_start in indices {
         if let Some(result) = ClassFileParser::get_end_of_class(&buffer, buffer_start) {
@@ -40,9 +41,9 @@ fn main() -> io::Result<()> {
             amount_of_classes += 1;
         }
     }
-    println!("Found {amount_of_classes} classes in {} ms.", now.elapsed().unwrap().as_millis());
 
-    println!("Writing classes");
+    println!("Found {} classes in {} ms.\nWriting classes.", amount_of_classes, now.elapsed().unwrap().as_millis());
+
     let now = SystemTime::now();
     let mut archive = ZipWriter::new(File::create(Path::new(&(path.to_owned() + ".jar")))?);
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
@@ -57,7 +58,7 @@ fn main() -> io::Result<()> {
     });
 
     archive.finish()?;
-    println!("Wrote classes in {} ms.", now.elapsed().unwrap().as_millis());
+    println!("Wrote {} classes in {} ms.", amount_of_classes, now.elapsed().unwrap().as_millis());
 
     return Ok(());
 }

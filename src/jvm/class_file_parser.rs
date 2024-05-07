@@ -24,8 +24,9 @@ impl ClassFileParser {
         };
 
         let _flags = stream.get_u2()?;
+
         let class_index = stream.get_u2()?;
-        let class_name = match cp.get_string_at(class_index) {
+        let class_name = match cp.get_symbol(class_index).and_then(|symbol| cp.get_string(symbol)) {
             Some(class_name) => class_name,
             None => return None,
         };
@@ -50,12 +51,12 @@ impl ClassFileParser {
     pub fn parse_constant_pool(stream: &mut ClassFileStream, cp_size: u16, major_version: u16) -> Option<ConstantPool> {
         let mut cp = ConstantPool::new();
 
-        let mut i = 1;
-        while i < cp_size {
+        let mut index = 1;
+        while index < cp_size {
             let tag = stream.get_u1()?;
             match tag {
                 ConstantPoolEntry::CLASS => {
-                    stream.get_u2()?;
+                    cp.put_symbol(index, stream.get_u2()?);
                 }
                 ConstantPoolEntry::FIELD_REF => {
                     stream.get_u2()?;
@@ -95,11 +96,11 @@ impl ClassFileParser {
                 }
                 ConstantPoolEntry::LONG => {
                     stream.get_u8()?;
-                    i += 1; // _enc_skip entry following eigth-byte constant, see JVM book p. 98
+                    index += 1; // _enc_skip entry following eigth-byte constant, see JVM book p. 98
                 }
                 ConstantPoolEntry::DOUBLE => {
                     stream.get_u8()?;
-                    i += 1; // _enc_skip entry following eigth-byte constant, see JVM book p. 98
+                    index += 1; // _enc_skip entry following eigth-byte constant, see JVM book p. 98
                 }
                 ConstantPoolEntry::NAME_AND_TYPE => {
                     stream.get_u2()?;
@@ -112,7 +113,7 @@ impl ClassFileParser {
                         string.push(stream.get_u1()?);
                     }
                     if let Ok(symbol) = String::from_utf8(string) {
-                        cp.put_string_at(i, symbol);
+                        cp.put_string(index, symbol);
                     }
                 }
                 ConstantPoolEntry::MODULE | ConstantPoolEntry::PACKAGE => {
@@ -122,7 +123,7 @@ impl ClassFileParser {
                 }
                 _ => return None,
             }
-            i += 1;
+            index += 1;
         }
 
         return Some(cp);
