@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    permissions: 
+      contents: write
+
+    strategy:
+      matrix:
+        target: 
+          - os: windows-latest
+            executable: class_recovery.exe
+            asset_name: class_recovery_windows${{ github.ref_name }}.exe
+          - os: ubuntu-latest
+            executable: class_recovery
+            asset_name: class_recovery_linux-${{ github.ref_name }}
+          - os: macos-latest
+            executable: class_recovery
+            asset_name: class_recovery_macos-${{ github.ref_name }}
+
+    runs-on: ${{ matrix.target.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2.2.0
+
+      - name: Build executable
+        run: cargo build --release
+        env:
+          GH_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
+          GH_VERSION: ${{ github.ref_name }}
+
+      - name: Upload executable
+        uses: svenstaro/upload-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: target/release/${{ matrix.target.executable }}
+          asset_name: ${{ matrix.target.asset_name }}

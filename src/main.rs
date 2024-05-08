@@ -12,6 +12,7 @@ use crate::kmp::Haystack;
 
 mod kmp;
 mod jvm;
+mod branding;
 
 const MAGIC_VALUE: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
 
@@ -57,9 +58,11 @@ fn main() -> io::Result<()> {
         });
     });
 
+    let comment = format!("These classes were recovered by {} ({})\nVisit {} for more information", branding::NAME, branding::VERSION, branding::REPOSITORY);
+    archive.set_comment(comment);
+
     archive.finish()?;
     println!("Wrote {} classes in {} ms.", amount_of_classes, now.elapsed().unwrap().as_millis());
 
     return Ok(());
 }
-
