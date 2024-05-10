@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::{env, io};
+use std::env;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::SystemTime;
@@ -16,19 +16,26 @@ mod branding;
 
 const MAGIC_VALUE: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
-    let path = args.get(1).expect("Missing path to .DMP file");
+    let path = match args.get(1) {
+        Some(path) => path,
+        None => return Err("Missing argument for path to .DMP file".to_owned()),
+    };
+
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(err) => return Err(err.to_string()),
+    };
 
     let mut buffer = Vec::new();
     let mut classes = Vec::new();
 
-    let mut file = File::open(path)?;
     println!("Reading file.");
-    file.read_to_end(&mut buffer)?;
-
+    if file.read_to_end(&mut buffer).is_err() {
+        return Err("Failed to read file buffer".to_owned());
+    }
     let buffer = buffer; // make buffer immutable which could be an advantage for multi-threading
-    let mut amount_of_classes = 0;
 
     println!("Searching for Java Class pattern.");
     let indices = buffer.indices_of_needle(MAGIC_VALUE);
@@ -39,14 +46,17 @@ fn main() -> io::Result<()> {
     for buffer_start in indices {
         if let Some(result) = ClassFileParser::get_end_of_class(&buffer, buffer_start) {
             classes.push((result.0, buffer_start, result.1));
-            amount_of_classes += 1;
         }
     }
 
-    println!("Found {} classes in {} ms.\nWriting classes.", amount_of_classes, now.elapsed().unwrap().as_millis());
+    println!("Found {} classes in {} ms.\nWriting classes.", classes.len(), now.elapsed().unwrap().as_millis());
 
     let now = SystemTime::now();
-    let mut archive = ZipWriter::new(File::create(Path::new(&(path.to_owned() + ".jar")))?);
+    let output = match File::create(Path::new(&(path.to_owned() + ".jar"))) {
+        Ok(output) => output,
+        Err(err) => return Err(err.to_string()),
+    };
+    let mut archive = ZipWriter::new(output);
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
     classes.iter().for_each(|(class_name, buffer_start, buffer_end)| {
@@ -61,8 +71,10 @@ fn main() -> io::Result<()> {
     let comment = format!("These classes were recovered by {} ({})\nVisit {} for more information", branding::NAME, branding::VERSION, branding::REPOSITORY);
     archive.set_comment(comment);
 
-    archive.finish()?;
-    println!("Wrote {} classes in {} ms.", amount_of_classes, now.elapsed().unwrap().as_millis());
+    if archive.finish().is_err() {
+        return Err("Failed to write classes to archive".to_owned());
+    }
+    println!("Wrote {} classes in {} ms.", classes.len(), now.elapsed().unwrap().as_millis());
 
     return Ok(());
 }

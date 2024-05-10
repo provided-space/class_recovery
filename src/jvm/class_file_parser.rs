@@ -18,18 +18,12 @@ impl ClassFileParser {
         let major_version = stream.get_u2()?;
 
         let cp_size = stream.get_u2()?; // TODO: increase cp_size by one, if "_is_hidden"
-        let cp = match Self::parse_constant_pool(&mut stream, cp_size, major_version) {
-            Some(cp) => cp,
-            None => return None,
-        };
+        let cp = Self::parse_constant_pool(&mut stream, cp_size, major_version)?;
 
         let _flags = stream.get_u2()?;
 
         let class_index = stream.get_u2()?;
-        let class_name = match cp.get_symbol(class_index).and_then(|symbol| cp.get_string(symbol)) {
-            Some(class_name) => class_name,
-            None => return None,
-        };
+        let class_name = cp.get_symbol(class_index).and_then(|symbol| cp.get_string(symbol))?;
 
         let _super_class_index = stream.get_u2()?;
 
