@@ -30,7 +30,7 @@ impl MethodParser {
                 if tag == Tag::CODE {
                     let _max_stack = stream.get_u2()?;
                     let _max_locals = stream.get_u2()?;
-                    let code_length = stream.get_u2()?;
+                    let code_length = stream.get_u4()?;
 
                     stream.skip_u1(code_length as usize)?;
 
@@ -55,6 +55,9 @@ impl MethodParser {
                                 // Skip unknown attributes
                                 stream.skip_u1(code_attribute_length as usize)?;
                             }
+                        } else {
+                            // Skip unknown attributes
+                            stream.skip_u1(code_attribute_length as usize)?;
                         }
                     }
                 } else if tag == Tag::EXCEPTIONS {
@@ -84,6 +87,9 @@ impl MethodParser {
                     } else if tag == Tag::RUNTIME_VISIBLE_TYPE_ANNOTATIONS {
                         stream.skip_u1(attribute_length as usize)?;
                     } else if tag == Tag::RUNTIME_INVISIBLE_TYPE_ANNOTATIONS {
+                        stream.skip_u1(attribute_length as usize)?;
+                    } else {
+                        // Skip unknown attributes
                         stream.skip_u1(attribute_length as usize)?;
                     }
                 } else {

@@ -58,7 +58,6 @@ impl FieldParser {
                 // Skip unknown attributes
                 stream.skip_u1(attribute_length as usize)?;
             }
-
         }
         return Some(());
     }

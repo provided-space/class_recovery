@@ -26,6 +26,9 @@ impl ClassFileParser {
 
         let class_index = stream.get_u2()?;
         let class_name = cp.get_symbol(class_index).and_then(|symbol| cp.get_string(symbol))?;
+        if class_name.starts_with("java/") || class_name.starts_with("jdk/") || class_name.starts_with("sun/") {
+            return None;
+        }
 
         let _super_class_index = stream.get_u2()?;
 

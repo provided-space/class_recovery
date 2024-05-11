@@ -15,6 +15,7 @@ mod jvm;
 mod branding;
 
 const MAGIC_VALUE: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
+const MAX_SIZE: usize = u16::MAX as usize;
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
@@ -45,6 +46,9 @@ fn main() -> Result<(), String> {
     let now = SystemTime::now();
     for buffer_start in indices {
         if let Some(result) = ClassFileParser::get_end_of_class(&buffer, buffer_start) {
+            if result.1 - buffer_start > MAX_SIZE {
+                continue;
+            }
             classes.push((result.0, buffer_start, result.1));
         }
     }
