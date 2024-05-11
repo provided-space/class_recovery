@@ -7,7 +7,7 @@ use std::time::SystemTime;
 use zip::{CompressionMethod, ZipWriter};
 use zip::write::SimpleFileOptions;
 
-use crate::jvm::class_file_parser::ClassFileParser;
+use jvm::parser::class_file_parser::ClassFileParser;
 use crate::kmp::Haystack;
 
 mod kmp;
@@ -59,11 +59,13 @@ fn main() -> Result<(), String> {
     let mut archive = ZipWriter::new(output);
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
+    let mut amount_of_entries = 0;
     classes.iter().for_each(|(class_name, buffer_start, buffer_end)| {
         let _ = archive.start_file(class_name.to_owned() + ".class", options).and_then(|entry| {
             let start = *buffer_start;
             let end = *buffer_end;
             let _ = archive.write_all(&buffer[start..end]);
+            amount_of_entries += 1;
             return Ok(entry);
         });
     });
@@ -74,7 +76,7 @@ fn main() -> Result<(), String> {
     if archive.finish().is_err() {
         return Err("Failed to write classes to archive".to_owned());
     }
-    println!("Wrote {} classes in {} ms.", classes.len(), now.elapsed().unwrap().as_millis());
+    println!("Wrote {} classes in {} ms.", amount_of_entries, now.elapsed().unwrap().as_millis());
 
     return Ok(());
 }
