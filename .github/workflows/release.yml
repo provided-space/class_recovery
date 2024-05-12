@@ -15,7 +15,7 @@ jobs:
         target: 
           - os: windows-latest
             executable: class_recovery.exe
-            asset_name: class_recovery_windows${{ github.ref_name }}.exe
+            asset_name: class_recovery_windows-${{ github.ref_name }}.exe
           - os: ubuntu-latest
             executable: class_recovery
             asset_name: class_recovery_linux-${{ github.ref_name }}
