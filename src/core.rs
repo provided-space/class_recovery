@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -8,6 +9,7 @@ use zip::{CompressionMethod, ZipWriter};
 use crate::jvm::parser::class_file_parser::ClassFileParser;
 use crate::kmp::Haystack;
 use crate::branding;
+use crate::jvm::class_buffer::ClassBuffer;
 
 const MAGIC_VALUE: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
 const MAX_SIZE: usize = u16::MAX as usize;
@@ -19,17 +21,26 @@ pub fn process_bytes(buffer: &Vec<u8>, output_path: &Path, blacklist: &Vec<Strin
     println!("Found {} possible classes.\nSearching constructable classes.", indices.len());
 
     let now = SystemTime::now();
-    let mut classes = Vec::new();
+    let mut class_map: HashMap<String, Vec<ClassBuffer>> = HashMap::new();
+    let mut amount_of_classes = 0;
+
     for buffer_start in indices {
-        if let Some(class) = ClassFileParser::parse(&buffer, buffer_start, blacklist.clone()) {
-            if class.len() > MAX_SIZE {
-                continue;
-            }
-            classes.push(class);
+        let class = match ClassFileParser::parse(&buffer, buffer_start, blacklist.clone()) {
+            Some(class) => class,
+            None => continue,
+        };
+
+        if class.len() > MAX_SIZE {
+            continue;
         }
+
+        let class_name = class.get_name().to_owned();
+        let classes = class_map.entry(class_name).or_default();
+        classes.push(class.clone());
+        amount_of_classes += 1;
     }
 
-    println!("Found {} classes in {} ms.\nWriting classes.", classes.len(), now.elapsed().unwrap().as_millis());
+    println!("Found {} classes in {} ms.\nWriting classes.", amount_of_classes, now.elapsed().unwrap().as_millis());
 
     let now = SystemTime::now();
     let output = match File::create(output_path) {
@@ -40,12 +51,22 @@ pub fn process_bytes(buffer: &Vec<u8>, output_path: &Path, blacklist: &Vec<Strin
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
     let mut amount_of_entries = 0;
-    classes.iter().for_each(|class| {
-        let _ = archive.start_file(class.get_name().to_owned() + ".class", options).and_then(|entry| {
-            let _ = archive.write_all(class.get_contents());
-            amount_of_entries += 1;
-            return Ok(entry);
-        });
+    class_map.iter().for_each(|(_, classes)| {
+        let mut i = 0;
+        for class in classes {
+            i += 1;
+
+            let mut file_name = class.get_name().to_owned() + ".class";
+            if i != 1 {
+                file_name += format!(" ({})", i).as_str();
+            }
+
+            let _ = archive.start_file(file_name, options).and_then(|entry| {
+                let _ = archive.write_all(class.get_contents());
+                amount_of_entries += 1;
+                return Ok(entry);
+            });
+        }
     });
 
     let comment = format!("These classes were recovered by {} ({})\nVisit {} for more information", branding::NAME, branding::VERSION, branding::REPOSITORY);

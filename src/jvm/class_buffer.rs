@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct ClassBuffer<'a> {
     contents: &'a [u8],
     name: String,
