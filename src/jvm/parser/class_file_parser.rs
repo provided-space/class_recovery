@@ -1,3 +1,4 @@
+use crate::jvm::class_buffer::ClassBuffer;
 use crate::jvm::class_file_stream::ClassFileStream;
 use crate::jvm::constant::version as Version;
 use crate::jvm::constant::tag as Tag;
@@ -12,7 +13,7 @@ pub struct ClassFileParser {
 
 impl ClassFileParser {
     
-    pub fn get_end_of_class(buffer: &Vec<u8>, buffer_start: usize) -> Option<(String, usize)> {
+    pub fn parse(buffer: &Vec<u8>, buffer_start: usize) -> Option<ClassBuffer> {
         let mut stream = ClassFileStream::new(&buffer, buffer_start);
 
         let _magic = stream.get_u4()?;
@@ -44,7 +45,10 @@ impl ClassFileParser {
         let attributes_len = stream.get_u2()?;
         Self::parse_classfile_attributes(&mut stream, attributes_len, major_version, &cp)?;
 
-        return Some((class_name.clone(), stream.get_current()));
+        return Some(ClassBuffer::new(
+            &buffer[buffer_start..stream.get_current()],
+            String::from(class_name),
+        ));
     }
 
     fn parse_interfaces(stream: &mut ClassFileStream, len: u16) -> Option<()> {
