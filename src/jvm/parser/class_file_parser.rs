@@ -13,7 +13,7 @@ pub struct ClassFileParser {
 
 impl ClassFileParser {
     
-    pub fn parse(buffer: &Vec<u8>, buffer_start: usize) -> Option<ClassBuffer> {
+    pub fn parse(buffer: &Vec<u8>, buffer_start: usize, blacklist: Vec<String>) -> Option<ClassBuffer> {
         let mut stream = ClassFileStream::new(&buffer, buffer_start);
 
         let _magic = stream.get_u4()?;
@@ -27,8 +27,11 @@ impl ClassFileParser {
 
         let class_index = stream.get_u2()?;
         let class_name = cp.get_symbol(class_index).and_then(|symbol| cp.get_string(symbol))?;
-        if class_name.starts_with("java/") || class_name.starts_with("jdk/") || class_name.starts_with("sun/") {
-            return None;
+
+        for entry in blacklist {
+            if class_name.starts_with(&entry) {
+                return None;
+            }
         }
 
         let _super_class_index = stream.get_u2()?;

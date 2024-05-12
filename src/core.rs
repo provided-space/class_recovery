@@ -12,7 +12,7 @@ use crate::branding;
 const MAGIC_VALUE: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
 const MAX_SIZE: usize = u16::MAX as usize;
 
-pub fn process_bytes(buffer: &Vec<u8>, output_path: &Path) -> Result<(), String> {
+pub fn process_bytes(buffer: &Vec<u8>, output_path: &Path, blacklist: &Vec<String>) -> Result<(), String> {
     println!("Searching for Java Class pattern.");
     let indices = buffer.indices_of_needle(MAGIC_VALUE);
 
@@ -21,7 +21,7 @@ pub fn process_bytes(buffer: &Vec<u8>, output_path: &Path) -> Result<(), String>
     let now = SystemTime::now();
     let mut classes = Vec::new();
     for buffer_start in indices {
-        if let Some(class) = ClassFileParser::parse(&buffer, buffer_start) {
+        if let Some(class) = ClassFileParser::parse(&buffer, buffer_start, blacklist.clone()) {
             if class.len() > MAX_SIZE {
                 continue;
             }
