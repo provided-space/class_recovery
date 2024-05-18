@@ -45,7 +45,7 @@ impl MethodParser {
                         if let Some(code_tag) = cp.get_string(&code_attribute_name_index) {
                             if code_tag == Tag::LINE_NUMBER_TABLE {
                                 Self::parse_linenumber_table(stream)?;
-                            } else if tag == Tag::LOCAL_VARIABLE_TABLE {
+                            } else if code_tag == Tag::LOCAL_VARIABLE_TABLE {
                                 Self::parse_localvariable_table(stream)?;
                             } else if major_version >= Version::JAVA_1_5 && code_tag == Tag::LOCAL_VARIABLE_TYPE_TABLE {
                                 Self::parse_localvariable_table(stream)?;
